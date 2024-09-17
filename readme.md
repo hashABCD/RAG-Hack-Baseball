@@ -1,4 +1,4 @@
-# BASEBALL RULE APP
+# :baseball: BASEBALL RULE BOT :robot:
 
 A simple RAG application develeloped as part of [Microsoft RAG Hackathon](https://github.com/microsoft/RAG_Hack/)
 
