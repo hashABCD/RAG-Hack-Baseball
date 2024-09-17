@@ -10,6 +10,9 @@ from sqlmodel import Field, Session, SQLModel, create_engine, func, select
 from sqlalchemy import Column, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
+# # Define the models
+# class Base(DeclarativeBase):
+#     pass
 
 #set up pg vector DB
 load_dotenv(override=True)
@@ -43,11 +46,15 @@ register_vector(conn)
 
 def create_table():
     # Create table to store embeddings and metadata
+    print("inside create table")
     table_create_command = """
     DROP TABLE IF EXISTS embeddings;
     CREATE TABLE embeddings (
                 id serial primary key, 
-                chunk text,
+                source text,
+                page text,
+                content text,
+                chunk_id integer,
                 embedding vector(768)
                 );
                 """
@@ -61,8 +68,8 @@ def document_loader():
     print("loaded data...")
 
     pages = loader.load_and_split()
-    print("Length", len(pages))
-    print(pages[0])
+    # print("Length", len(pages))
+    # print(pages[0])
     return(pages)
 
 def split_documents(documents: list[Document]):
@@ -72,20 +79,20 @@ def split_documents(documents: list[Document]):
         length_function=len,
         is_separator_regex=False,
     )
+    print("text splitting...")
     return text_splitter.split_documents(documents)
 
 
 if __name__ == "__main__":
     documents = document_loader()
     chunks = split_documents(documents)
-    print(chunks[0])
+    print("text splitting complete")
     create_table()
-    doc_vectors = get_embedding_function().embed_documents([chunk.page_content for chunk in chunks])
-
     cur.execute("CREATE INDEX ON embeddings USING hnsw (embedding vector_l2_ops)")
-
-    for i in range(len(doc_vectors)):
-        cur.execute("INSERT INTO embeddings (chunk , embedding) VALUES (%s, %s)", (chunks[i],doc_vectors[i]))
+    emb_chunks = get_embedding_function().embed_documents([chunk.page_content for chunk in chunks])
+    for i, v in enumerate(emb_chunks):
+        source = chunks[i].metadata['source']
+        page = chunks[i].metadata['page']
+        content = chunks[i].page_content
+        cur.execute("INSERT INTO embeddings (source, page, content, chunk_id,embedding) VALUES (%s, %s, %s, %s, %s)", (source, page, content, i, v,))
         conn.commit()
-
-    print(len(doc_vectors)) 

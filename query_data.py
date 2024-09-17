@@ -6,6 +6,7 @@ import psycopg2
 import numpy as np
 from langchain.prompts import ChatPromptTemplate
 from langchain_community.llms.ollama import Ollama
+import streamlit as st
 
 #set up pg vector DB
 load_dotenv(override=True)
@@ -38,6 +39,7 @@ Answer the question based only on the following context:
 ---
 
 Answer the question based on the above context: {question}
+Cite the sources inside square brackets at the end from {sources} in the next line.
 """
 
 def get_similar_docs(query_embedding, conn):
@@ -46,7 +48,7 @@ def get_similar_docs(query_embedding, conn):
     register_vector(conn)
     cur = conn.cursor()
     # Get the top 3 most similar documents using the KNN <=> operator
-    cur.execute("SELECT embedding FROM embeddings ORDER BY embedding <=> %s LIMIT 3", (embedding_array,))
+    cur.execute("SELECT source, page, content FROM embeddings ORDER BY embedding <=> %s LIMIT 3", (embedding_array,))
     top3_docs = cur.fetchall()
     return top3_docs
 
@@ -56,11 +58,22 @@ def get_embeddings(user_input):
 
 
 if __name__ == "__main__":
-    user_input = "how many players are in baseball team?"
-    embed_query = get_embeddings(user_input)
-    res = get_similar_docs(embed_query, conn)
-    prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-    prompt = prompt_template.format(context=res, question=embed_query)
-    model = Ollama(model="mistral")
-    response_text = model.invoke(prompt)
-    print(response_text)
+    st.title("Baseball Rules Bot")
+    user_q = st.chat_input("What do you want to know about baseball? \n Press 'X' to exit")
+    if user_q:
+        st.write(f"Searching for... : {user_q}")
+        embed_query = get_embeddings(user_q)
+        res = get_similar_docs(embed_query, conn)
+        
+        context = "\n\n---\n\n".join([r[2] for r in res])
+        refs = set()
+        for r in res :
+            ref = f"{r[0]}/Page{int(r[1])+1}"
+            refs.add(ref)
+
+        prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+        prompt = prompt_template.format(context=context, question=user_q, sources=refs)
+        model = Ollama(model="mistral")
+        response_text = model.invoke(prompt)
+        st.write(response_text)
+        st.write("How can I help you?")
