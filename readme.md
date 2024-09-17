@@ -2,6 +2,9 @@
 
 A simple RAG application develeloped as part of [Microsoft RAG Hackathon](https://github.com/microsoft/RAG_Hack/)
 
+### Architecture
+![chatbot-architecture](image/architecture.png)
+
 ### Technical specs:
 | Frontend | streamlit |
 | --- | --- |
