@@ -58,7 +58,7 @@ def get_embeddings(user_input):
 
 
 if __name__ == "__main__":
-    st.title("Baseball Rules Bot")
+    st.title(":baseball: BASEBALL RULE BOT :baseball:")
     user_q = st.chat_input("What do you want to know about baseball? \n Press 'X' to exit")
     if user_q:
         st.write(f"Searching for... : {user_q}")
