@@ -6,13 +6,6 @@ from langchain.schema.document import Document
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from Embeddings import get_embedding_function
-from sqlmodel import Field, Session, SQLModel, create_engine, func, select
-from sqlalchemy import Column, text
-from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
-
-# # Define the models
-# class Base(DeclarativeBase):
-#     pass
 
 #set up pg vector DB
 load_dotenv(override=True)
@@ -46,7 +39,6 @@ register_vector(conn)
 
 def create_table():
     # Create table to store embeddings and metadata
-    print("inside create table")
     table_create_command = """
     DROP TABLE IF EXISTS embeddings;
     CREATE TABLE embeddings (
@@ -63,13 +55,8 @@ def create_table():
     print("Table created!")
 
 def document_loader():
-    print("loading data...")
     loader = PyPDFLoader("data/Beginners_Guide_Baseball.pdf")
-    print("loaded data...")
-
     pages = loader.load_and_split()
-    # print("Length", len(pages))
-    # print(pages[0])
     return(pages)
 
 def split_documents(documents: list[Document]):
@@ -77,16 +64,13 @@ def split_documents(documents: list[Document]):
         chunk_size=800,
         chunk_overlap=80,
         length_function=len,
-        is_separator_regex=False,
-    )
-    print("text splitting...")
+        is_separator_regex=False,)
     return text_splitter.split_documents(documents)
 
 
 if __name__ == "__main__":
     documents = document_loader()
     chunks = split_documents(documents)
-    print("text splitting complete")
     create_table()
     cur.execute("CREATE INDEX ON embeddings USING hnsw (embedding vector_l2_ops)")
     emb_chunks = get_embedding_function().embed_documents([chunk.page_content for chunk in chunks])
