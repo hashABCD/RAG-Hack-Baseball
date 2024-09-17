@@ -1,0 +1,5 @@
+.env
+.venv/
+__pycache__/
+ollama_simple.py
+tempCodeRunnerFile.py
